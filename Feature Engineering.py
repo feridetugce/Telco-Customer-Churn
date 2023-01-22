@@ -163,3 +163,38 @@ df["NEW_AVG_Charges"] = df["TotalCharges"] / (df["tenure"] + 1)
 
 
 cat_cols, num_cols, cat_but_car = grab_col_names(df)
+def label_encoder(dataframe, binary_col):
+    labelencoder = LabelEncoder()
+    dataframe[binary_col] = labelencoder.fit_transform(dataframe[binary_col])
+    return dataframe
+
+binary_cols = [col for col in df.columns if df[col].dtypes == "O" and df[col].nunique() == 2]
+binary_cols
+
+for col in binary_cols:
+    df = label_encoder(df, col)
+    
+    
+cat_cols = [col for col in cat_cols if col not in binary_cols and col not in ["Churn", "NEW_TotalServices"]]
+
+def one_hot_encoder(dataframe, categorical_cols, drop_first=False):
+    dataframe = pd.get_dummies(dataframe, columns=categorical_cols, drop_first=drop_first)
+    return dataframe
+
+df = one_hot_encoder(df, cat_cols, drop_first=True)
+
+
+y = df["Churn"]
+X = df.drop(["Churn","customerID"], axis=1)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=17)
+
+catboost_model = CatBoostClassifier(verbose=False, random_state=12345).fit(X_train, y_train)
+y_pred = catboost_model.predict(X_test)
+
+print(f"Accuracy: {round(accuracy_score(y_pred, y_test), 2)}")
+print(f"Recall: {round(recall_score(y_pred,y_test),2)}")
+print(f"Precision: {round(precision_score(y_pred,y_test), 2)}")
+print(f"F1: {round(f1_score(y_pred,y_test), 2)}")
+print(f"Auc: {round(roc_auc_score(y_pred,y_test), 2)}")
+
