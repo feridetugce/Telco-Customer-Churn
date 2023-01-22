@@ -119,3 +119,47 @@ def outlier_thresholds(dataframe, col_name, q1=0.25, q3=0.75):
 low, up = outlier_thresholds(df_Telco, "Churn")
 low, up = outlier_thresholds(df_Telco, "TotalCharges")
 low, up = outlier_thresholds(df_Telco, "MonthlyCharges")
+
+
+
+def missing_values_table(dataframe, na_name=False):
+    na_columns = [col for col in dataframe.columns if dataframe[col].isnull().sum() > 0]
+
+    n_miss = dataframe[na_columns].isnull().sum().sort_values(ascending=False)
+    ratio = (dataframe[na_columns].isnull().sum() / dataframe.shape[0] * 100).sort_values(ascending=False)
+    missing_df = pd.concat([n_miss, np.round(ratio, 2)], axis=1, keys=['n_miss', 'ratio'])
+    print(missing_df, end="\n")
+
+    if na_name:
+        return na_columns
+
+missing_values_table(df_Telco)
+
+
+df_Telco[num_cols].corr()
+f, ax = plt.subplots(figsize=[18, 13])
+sns.heatmap(df[num_cols].corr(), annot=True, fmt=".2f", ax=ax, cmap="magma")
+ax.set_title("Correlation Matrix", fontsize=20)
+plt.show()
+
+df.corrwith(df["Churn"]).sort_values(ascending=False)
+
+
+df_Telco.loc[(df_Telco["tenure"]>=0) & (df_Telco["tenure"]<=12),"NEW_TENURE_YEAR"] = "0-1 Year"
+df_Telco.loc[(df_Telco["tenure"]>12) & (df_Telco["tenure"]<=24),"NEW_TENURE_YEAR"] = "1-2 Year"
+df_Telco.loc[(df_Telco["tenure"]>24) & (df_Telco["tenure"]<=36),"NEW_TENURE_YEAR"] = "2-3 Year"
+df_Telco.loc[(df_Telco["tenure"]>36) & (df_Telco["tenure"]<=48),"NEW_TENURE_YEAR"] = "3-4 Year"
+df_Telco.loc[(df_Telco["tenure"]>48) & (df_Telco["tenure"]<=60),"NEW_TENURE_YEAR"] = "4-5 Year"
+df_Telco.loc[(df_Telco["tenure"]>60) & (df_Telco["tenure"]<=72),"NEW_TENURE_YEAR"] = "5-6 Year"
+
+df['NEW_TotalServices'] = (df[['PhoneService', 'InternetService', 'OnlineSecurity',
+                                       'OnlineBackup', 'DeviceProtection', 'TechSupport',
+                                       'StreamingTV', 'StreamingMovies']]== 'Yes').sum(axis=1)
+
+df["NEW_Engaged"] = df["Contract"].apply(lambda x: 1 if x in ["One year","Two year"] else 0)
+df["NEW_Young_Not_Engaged"] = df.apply(lambda x: 1 if (x["NEW_Engaged"] == 0) and (x["SeniorCitizen"] == 0) else 0, axis=1)
+df["NEW_FLAG_AutoPayment"] = df["PaymentMethod"].apply(lambda x: 1 if x in ["Bank transfer (automatic)","Credit card (automatic)"] else 0)
+df["NEW_AVG_Charges"] = df["TotalCharges"] / (df["tenure"] + 1)
+
+
+cat_cols, num_cols, cat_but_car = grab_col_names(df)
